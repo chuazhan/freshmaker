@@ -142,3 +142,37 @@ def test_get_bundle_csv_unavailable(mock_get, mock_koji, mock_log):
     mock_log.error.assert_any_call(
         "Operator manifests archive is unavaiable for build %s", "foobar-bundle-container-2.0-123"
     )
+
+
+@mock.patch("freshmaker.kojiservice.koji")
+def test_get_modulemd(mock_koji):
+    mock_session = mock.Mock()
+    build = {'build_id': 1850907,
+             'epoch': None,
+             'extra': {'typeinfo': {'module': {'modulemd_str': '---\ndocument: modulemd\nversion: 2\ndata:\n  name: ghc\n  stream: "9.2"\n  version: 3620211101111632\n  context: d099bf28\n  summary: Haskell GHC 9.2\n  description: >-\n    This module provides the Glasgow Haskell Compiler version 9.2.1\n  license:\n    module:\n    - MIT\n  xmd:\n    mbs:\n      buildrequires:\n        ghc:\n          context: 5e5ad4a0\n          filtered_rpms: []\n          koji_tag: module-ghc-8.10-3620210920031153-5e5ad4a0\n          ref: 1773e6a0b99813df3a02e83860ca5e51879b79da\n          stream: 8.10\n          version: 3620210920031153\n        platform:\n          context: 00000000\n          filtered_rpms: []\n          koji_tag: module-f36-build\n          ref: f36\n          stream: f36\n          stream_collision_modules: \n          ursine_rpms: \n          version: 1\n      commit: 5405c8a084c04476a956f1b3e49a733b888066a5\n      mse: TRUE\n      rpms:\n        ghc:\n          ref: 9be829cc000e68bb052f15099cac1a0ecac8f4eb\n      scmurl: https://src.fedoraproject.org/modules/ghc.git?#5405c8a084c04476a956f1b3e49a733b888066a5\n      ursine_rpms:\n      - ghc-bytestring-devel-0:0.10.12.0-115.fc35.s390x\n      - ghc-exceptions-prof-0:0.10.4-115.fc35.armv7hl\n  dependencies:\n  - buildrequires:\n      ghc: [8.10]\n      platform: [f36]\n    requires:\n      platform: [f36]\n  references:\n    community: https://www.haskell.org/ghc\n    documentation: https://wiki.haskell.org/GHC\n    tracker: https://gitlab.haskell.org/ghc/ghc/issues\n  profiles:\n    all:\n      description: standard installation\n      rpms:\n      - ghc\n      - ghc-doc\n      - ghc-prof\n    default:\n      description: standard installation\n      rpms:\n      - ghc\n    minimal:\n      description: just compiler and base\n      rpms:\n      - ghc-base-devel\n    small:\n      description: compiler with main core libs\n      rpms:\n      - ghc-devel\n  components:\n    rpms:\n      ghc:\n        rationale: compiler\n        repository: git+https://src.fedoraproject.org/rpms/ghc\n        cache: https://src.fedoraproject.org/repo/pkgs/ghc\n        ref: 9.2\n        buildorder: 1\n        arches: [aarch64, armv7hl, i686, ppc64le, s390x, x86_64]\n...\n',
+                                               'name': 'ghc',
+                                               'stream': '9.2',
+                                               'module_build_service_id': 13274,
+                                               'version': '3620211101111632',
+                                               'context': 'd099bf28',
+                                               'content_koji_tag': 'module-ghc-9.2-3620211101111632-d099bf28'
+                                               }
+                                    }
+                       },
+             'id': 1850907,
+             'name': 'ghc',
+             'nvr': 'ghc-9.2-3620211101111632.d099bf28',
+             'package_id': 1853,
+             'package_name': 'ghc',
+             }
+
+    mock_session.getBuild.return_value = build
+
+    mock_koji.ClientSession.return_value = mock_session
+
+    svc = kojiservice.KojiService()
+    mmd = svc.get_modulemd("ghc-9.2-3620211101111632.d099bf28")
+    module_name = mmd.get_module_name()
+    module_stream = mmd.get_stream_name()
+    assert module_name == "ghc"
+    assert module_stream == "9.2"
